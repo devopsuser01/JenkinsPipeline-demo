@@ -1,0 +1,25 @@
+include 'framework',\
+		'common_tools',\
+		'common_model',\
+		'careradius_business',\
+		'careaffiliate_business',\
+		'careradius_webservices',\
+		'careradius_webservices_j2ee',\
+		'careaffiliate_webservices',\
+		'careaffiliate_webservices_j2ee',\
+		'careradius_ear',\
+		'careaffiliate_ear',\
+		'tools',\
+		'framework_batch',\
+		'careradius_batch',\
+		'integration'
+		
+rootProject.name = 'careradius_suite' 
+rootProject.children.each { project ->
+	String fileBaseName = project.name.replaceAll("\\p{Upper}") { "${it.toLowerCase()}"}
+	String projectDirName = "$fileBaseName"
+	project.projectDir = new File(settingsDir, projectDirName)
+	project.buildFileName = "${fileBaseName}.gradle"
+	assert project.projectDir.isDirectory()
+	assert project.buildFile.isFile()
+}

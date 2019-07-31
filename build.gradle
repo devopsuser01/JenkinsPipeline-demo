@@ -1,0 +1,576 @@
+buildscript {
+  repositories {
+    jcenter()
+    mavenCentral()
+    maven {
+      url "$artifactory_contextUrl/plugins-release"
+      credentials {
+        username = artifactory_user
+        password = artifactory_password
+      }
+    }
+    maven { url 'http://repo.spring.io/plugins-release' }
+    maven { url 'https://plugins.gradle.org/m2/' }
+  }
+  dependencies {
+    classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.5'
+    classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:3.1.1'
+    classpath 'com.bmuschko:gradle-docker-plugin:2.2'
+    classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.0.1'
+  }
+}
+
+plugins {
+  id "org.ajoberstar.grgit" version "1.7.0"
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'propdeps'
+apply plugin: 'propdeps-eclipse'
+
+apply plugin: 'java'
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'maven-publish'
+
+import java.text.SimpleDateFormat
+
+group = pGroup
+version = pVersion
+ext.buildtype = artifactory_build_type
+
+sourceCompatibility = 1.8
+
+
+// Attaching utility functions to rootProject object, which can be called in sub-project tasks
+// Ex: rootProject.ext.getBuildTime() for returning the build time.
+ext {
+  getBuildTime = {
+    def df = new SimpleDateFormat('MM/dd/yyyy HH:mm:ss')
+    df.setTimeZone(TimeZone.getTimeZone('UTC'))
+    return df.format(new Date())
+  }
+
+  getScmObject = {
+    return org.ajoberstar.grgit.Grgit.open(file('../'))
+  }
+
+  getScmPath = {
+    return getScmObject().remote.list().size > 0 ? getScmObject().remote.list().url[0] : ""
+  }
+
+  getScmRevisionDate = {
+    return  getScmObject().head().date.format('MM/dd/yyyy HH:mm:ss')
+  }
+
+  getScmLastAuthor = {
+    return getScmObject().head().author.name
+  }
+
+  getScmRevision = {
+    return getScmObject().head().abbreviatedId
+  }  
+
+  getMajor = {
+    return rootProject.version.tokenize('.')[0]
+  }
+
+  getMinor = {
+    return rootProject.version.tokenize('.')[1]
+  }
+
+  getRelease = {
+    return rootProject.version.tokenize('.')[2]
+  }
+
+  getEb = {
+    return rootProject.version.tokenize('.')[3]
+  }
+
+  getApplicationVersion = {
+    return version + '.' + getScmRevision()
+  }
+}
+
+// update core-version.properties file with the scm revision/ date,
+// which gets retrieved by the UI for displaying on CA/ CR About page.
+def configureApplicationVersion() {
+  final props = new Properties()
+  final corVersion = new File("$rootDir/careradius_business/src/main/java/com/landacorp/careradius/core-version.properties")
+  corVersion.createNewFile()
+
+  props.setProperty('versionAndRevision', getApplicationVersion())
+  props.setProperty('buildDate', getScmRevisionDate())
+  props.store(corVersion.newWriter(), null)
+}
+
+ext.libraries = [
+  frameworkLibs: [
+    'aopalliance:aopalliance:1.0',
+    'org.aspectj:aspectjrt:1.6.12',
+    'org.aspectj:aspectjweaver:1.6.12',
+    'org.bouncycastle:bcprov-ext-jdk16:1.46',
+    'commons-collections:commons-collections:3.2.2',
+    dependencies.create('commons-jexl:commons-jexl:1.1') {transitive = false},
+    'net.sf.ehcache:ehcache:2.9.1',
+    'org.jacorb:jacorb:3.8',
+    'org.mybatis:mybatis:3.2.3',
+    'org.mybatis:mybatis-spring:1.2.1',
+    'org.springframework:spring-aop:4.0.5.RELEASE',
+    'org.springframework:spring-beans:4.0.5.RELEASE',
+    'org.springframework:spring-context:4.0.5.RELEASE',
+    'org.springframework:spring-context-support:4.0.5.RELEASE',
+    'org.springframework:spring-core:4.0.5.RELEASE',
+    'org.springframework:spring-expression:4.0.5.RELEASE',
+    'org.springframework:spring-jdbc:4.0.5.RELEASE',
+    'org.springframework:spring-jms:4.0.5.RELEASE',
+    'org.springframework:spring-orm:4.0.5.RELEASE',
+    'org.springframework:spring-tx:4.0.5.RELEASE',
+    'org.springframework:spring-web:4.0.5.RELEASE'
+  ],
+  frameworkTomcatLibs: [
+    'org.apache.geronimo.specs:geronimo-j2ee-management_1.1_spec:1.0.1',
+
+  ],
+  frameworkProvided: [
+    'net.sourceforge.jexcelapi:jxl:2.6.12',
+    'commons-dbcp:commons-dbcp:1.2.2'
+  ],
+  tomcat: [
+    dependencies.create('org.exl.metro:metro-webservices-metrics:1.0') {transitive = false}
+  ],
+  tomcatProvided: [
+    'javax.jms:jms:1.1',
+    'commons-pool:commons-pool:1.5.4',
+    'javax.xml.bind:jsr173_api:1.0',
+    'org.exl.jexcel:jxl:1.4.2_02-b03',
+    'ojdbc7:ojdbc7:ojdbc7',
+    'javax.servlet:servlet-api:2.3',
+    'org.glassfish.metro:webservices-api:2.3.1',
+    'org.glassfish.metro:webservices-extra:2.3.1',
+    'org.glassfish.metro:webservices-extra-api:2.3.1',
+    'org.glassfish.metro:webservices-rt:2.3.1',
+    'org.glassfish.metro:webservices-tools:2.3.1'
+  ],
+  activeMq: [
+    dependencies.create('org.apache.activemq:activemq-core:5.7.0') {transitive = false},
+    dependencies.create('org.apache.activemq:activemq-pool:5.11.1') {transitive = false}
+  ],
+  crystal: [
+    'org.exl.crystal:CrystalReportsSDK:1.0',
+    'org.exl.crystal:SL_plugins:1.0',
+    'org.exl.crystal:TraceLog:14.1.1',
+    'org.exl.crystal:backport-util-concurrent-2.2:2.2',
+    'org.exl.crystal:bcm:1.0',
+    'org.exl.crystal:biarengine:1.0',
+    'org.exl.crystal:ceaspect:1.0',
+    'org.exl.crystal:cecore:1.0',
+    'org.exl.crystal:celib:1.0',
+    'org.exl.crystal:ceplugins_core:1.0',
+    'org.exl.crystal:cereports:1.0',
+    'org.exl.crystal:cesession:1.0',
+    'org.exl.crystal:commons-beanutils:1.0',
+    'org.exl.crystal:commons-digester-1.6:1.6',
+    'org.exl.crystal:corbaidl:1.0',
+    'org.exl.crystal:cryptojFIPS:1.0',
+    'org.exl.crystal:derby:10.2.2000000.485682',
+    'org.exl.crystal:ebus405:11.5.8.834',
+    'org.exl.crystal:freessl201:11.5.8.834',
+    'org.exl.crystal:icu4j:3.8.1',
+    'org.exl.crystal:jsf-api.jar:1.1',
+    'org.exl.crystal:jsf-impl:1.1',
+    'org.exl.crystal:jstl:1.1',
+    'org.exl.crystal:logging:14.1.1',
+    'org.exl.crystal:ras21sdk:14.1.1',
+    'org.exl.crystal:ssljFIPS:5.1.1',
+    'org.exl.crystal:webreporting:14.1.1',
+    'org.exl.crystal:webreporting-jsf:14.1.1',
+    'org.exl.crystal:xcelsius:1.0'
+  ],
+  testingLibs: [
+    'org.mockito:mockito-all:1.9.5',
+    'org.springframework:spring-test:4.0.5.RELEASE',
+    'xalan:serializer:2.7.1',
+    'xalan:xalan:2.7.1',
+    'xerces:xercesImpl:2.10.0',
+    'xml-apis:xml-apis:1.4.01',
+    'xml-resolver:xml-resolver:1.2',
+    'junit:junit:4.11',
+    'com.fasterxml.jackson.core:jackson-databind:2.6.4'
+  ],
+  jaxws: [
+    'com.sun.xml.ws:jaxws-tools:2.2.10'
+  ],
+  loggingLibs: [
+    'org.slf4j:slf4j-api:1.7.10',
+    'org.slf4j:jcl-over-slf4j:1.7.10',
+    'ch.qos.logback:logback-classic:1.1.3'
+  ],
+  careRadiusLibs: [
+    'net.java.dev.vcc.thirdparty:collection-setter-injector:0.5.0-1',
+    'commons-codec:commons-codec:1.3',
+    'commons-httpclient:commons-httpclient:3.1',
+    'commons-lang:commons-lang:2.1',
+    dependencies.create('org.owasp.esapi:esapi:2.0GA') {transitive = false},
+    'net.jcip:jcip-annotations:1.0',
+    'joda-time:joda-time:1.6.2',
+    'ca.juliusdavies:not-yet-commons-ssl:0.3.9',
+    dependencies.create('org.opensaml:opensaml:2.6.1') {transitive = false},
+    dependencies.create('org.opensaml:openws:1.5.1') {transitive = false},
+    dependencies.create('velocity:velocity:1.5') {transitive = false},
+    'org.apache.santuario:xmlsec:1.4.4',
+    dependencies.create('org.opensaml:xmltooling:1.3.2') {transitive = false},
+    dependencies.create('org.scala-saddle:google-rfc-2445:20110304') {transitive = false},
+
+    //openehealth for EHR
+    'org.openehealth.ipf.oht.mdht:ipf-oht-mdht-uml-cda:1.2.0.201212201425'
+  ],
+  careAffiliateProvidedLibs: [
+    'axis:axis:1.4',
+    'commons-discovery:commons-discovery:0.2',
+    'javax.xml:jaxrpc:1.1',
+    'wsdl4j:wsdl4j:1.4'
+  ],
+  careRadiusBatchLibs: [
+    'org.apache.commons:commons-csv:1.0'
+  ]
+]
+
+// We can configure gradle to push artifacts to two repos, namely
+// BUILD_SNAPSHOT repo will contain artifacts  .zip, .tar, .war , .ear
+// LIBS_SNAPSHOT repo will contain artifacts  .jar, javadoc, sources
+Boolean buildLibs
+switch(buildtype) {
+  case ~/(?i)^LIBS_SNAPSHOT$/:
+    buildLibs = true
+    break
+  case ~/(?i)^BUILD_SNAPSHOT$/:
+    buildLibs = false
+    break
+  default:
+    throw new GradleException(
+      'buildtype must be either BUILD_SNAPSHOT or LIBS_SNAPSHOT'
+    )
+}
+println "Setting buildtype as : $buildtype"
+
+//Built-in Artifactory properties published in regular props matrix. The
+//requires to declare them as *root* project properties, hence the quotes.
+ext.'buildInfo.build.name' = artifactory_build_name
+ext.'buildInfo.build.number' = artifactory_build_number
+
+artifactory {
+  contextUrl = artifactory_contextUrl
+
+  publish {
+    final repo = buildLibs ?
+      artifactory_libs_snapshot_repo_key :
+      artifactory_build_snapshot_repo_key
+    println "Setting repo key as : $repo"
+    repository {
+      repoKey = repo
+      username = artifactory_user
+      password = artifactory_password
+    }
+
+    defaults {
+      final mainPub = buildLibs ?
+        'libs_snapshot_publication' :
+        'build_snapshot_publication'
+      publications mainPub
+
+      publishIvy = false
+
+      final re = rootProject.ext
+      properties = [
+        major:             re.getMajor(),
+        minor:             re.getMinor(),
+        release:           re.getRelease(),
+        eb:                re.getEb(),
+        build_date:        re.getBuildTime(),
+        scm_path:          re.getScmPath() + '/' + project.name,
+        scm_last_author:   re.getScmLastAuthor(),
+        scm_revision_date: re.getScmRevisionDate(),
+        scm_revision:      re.getScmRevision().toString(),
+        scm_repo:          re.getScmPath(),
+      ]
+    }
+  }
+}
+
+allprojects {
+
+  configurations.all {
+    resolutionStrategy.eachDependency {
+      if (it.requested.name == 'commons-logging') {
+        it.useTarget 'org.slf4j:jcl-over-slf4j:1.7.10'
+      }
+      if (it.requested.name == 'log4j') {
+        it.useTarget 'org.slf4j:log4j-over-slf4j:1.7.12'
+      }
+    }
+  }
+  // disabling JavaDoc linting for now based on following article
+  // http://blog.joda.org/2014/02/turning-off-doclint-in-jdk-8-javadoc.html
+  tasks.withType(Javadoc) {
+    options.addStringOption('Xdoclint:none', '-quiet')
+  }
+
+}
+
+subprojects {
+  group = parent.group
+  version = parent.version
+  sourceCompatibility = parent.sourceCompatibility
+
+  apply plugin: 'propdeps'
+  apply plugin: 'propdeps-eclipse'
+  apply plugin: 'java'
+  apply plugin: 'org.sonarqube'
+  apply plugin: 'jacoco'
+
+  test {
+    //unit test failures won't fail gradle build
+    ignoreFailures = true
+  }
+
+  project.tasks.jacocoTestReport.dependsOn test
+  project.tasks.sonarqube.dependsOn jacocoTestReport
+
+  // Task for running sonar analysis
+  task runSonar(dependsOn: ['test', 'jacocoTestReport', 'sonarqube'])
+
+  jacoco {
+    toolVersion = '0.7.6.201602180812'
+  }
+
+  jacocoTestReport {
+    reports {
+      //code coverage report in local build folder is disabled
+      xml.enabled false
+      csv.enabled false
+      html.enabled false
+    }
+  }
+
+  sonarqube {
+    properties {
+      // dynamic setting of project name in sonar, project.name will be taken as subproject name
+      // ex: com.exl.careradius.Framework.3.2.0.0 when run in Framework subproject
+      property 'sonar.projectName', "${project.group}.${project.name}.${project.version}"
+      property 'sonar.exclusions', '**/*EndPoint.java'
+    }
+  }
+
+  if(project.name == 'common_tools') {
+    apply plugin: 'eclipse'
+  } else {
+    apply plugin: 'eclipse-wtp'
+  }
+
+  // this is a virtual repository referenced by subprojects such as careaffiliate_webservices.gradle
+  repositories.maven {
+    url "$artifactory_contextUrl/exlservice_repo"
+  }
+
+  //This insures all files that are in the resources folder AND any non-java files in the java directory
+  //are copied as resources when compilation takes place.
+  sourceSets.main.resources {}
+  sourceSets.main {
+    compileClasspath += configurations.provided
+    resources {
+      srcDir 'src/main/resources'
+      srcDir 'src/main/java'
+      exclude '**/*.java'
+    }
+  }
+  sourceSets.test.resources {}
+  sourceSets.test {
+    compileClasspath += configurations.provided
+    runtimeClasspath += configurations.provided
+    resources {
+      srcDir 'src/main/resources'
+      srcDir 'src/test/resources'
+      srcDir 'src/test/java'
+      exclude '**/*.java'
+    }
+  }
+
+  eclipse.classpath.file.whenMerged { lClasspath ->
+    //Tell eclipse to use "classes" as the output path rather than the default "bin"
+    lClasspath.entries.findAll{lEntry -> lEntry.getKind() == 'output'}*.path = 'build/classes'
+
+    // Remove the test folder from the project classpath.
+    //lClasspath.entries.removeAll{lEntry -> lEntry.path.startsWith("src/test/")}
+
+    // Find all source entries in the classpath and clear the exclusion patterns.
+    lClasspath.entries.findAll{lEntry -> lEntry in org.gradle.plugins.ide.eclipse.model.SourceFolder}*.excludes = []
+  }
+
+  eclipse.classpath {
+    plusConfigurations += [configurations.provided]
+    //noExportConfigurations += [configurations.provided]
+  }
+
+  javadoc { classpath += configurations.provided }
+}
+
+task updateApplicationVersionFile {
+  doLast {
+    println 'Updated Application Revision File.'
+    configureApplicationVersion()
+  }
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.13'
+}
+
+final logSonarSkipped = { println 'Sonar Analysis skipped for Project' }
+project('common_model') {
+  dependencies {
+    provided project(':framework')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('common_tools') {
+  dependencies {
+    provided project(':framework')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('careradius_business') {
+  dependencies {
+    compile project(':framework')
+    compile project(':common_model')
+    provided project(':common_tools')
+  }
+  sonarqube {
+      properties {
+           property 'sonar.exclusions', 'cr_endpoints/**/*.java'
+      }
+    }
+}
+
+project('careaffiliate_business') {
+  dependencies {
+    compile project(':framework')
+    compile project(':common_model')
+    provided project(':common_tools')
+    provided project(':careradius_business')
+    //dependency used while testCompile only, not used for compile or runtime
+    //from https://softnoise.wordpress.com/2014/09/07/gradle-sub-project-test-dependencies-in-multi-project-builds/
+    testCompile project(path: ':careradius_business', configuration: 'testOutput')
+  }
+}
+
+project('careradius_webservices') {
+  dependencies {
+    compile project(':framework')
+    compile project(':common_model')
+    compile project(':careradius_business')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('careradius_webservices_j2ee') {
+  dependencies {
+    compile project(':framework')
+    compile project(':common_model')
+    compile project(':careradius_business')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('careradius_ear') {
+  dependencies {
+    compile project(':careradius_webservices_j2ee')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('careaffiliate_webservices') {
+  dependencies {
+    compile project(':framework')
+    compile project(':common_model')
+    compile project(':careradius_business')
+    compile project(':careaffiliate_business')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('careaffiliate_webservices_j2ee') {
+  dependencies {
+    compile project(':framework')
+    compile project(':common_model')
+    compile project(':careradius_business')
+    compile project(':careaffiliate_business')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('careaffiliate_ear') {
+  dependencies {
+    compile project(':careaffiliate_webservices_j2ee')
+  }
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('framework_batch') {
+  dependencies{
+    compile project(':framework')
+    compile project(':common_model')
+  }
+}
+
+project('careradius_batch') {
+  dependencies{
+    compile  project(':careradius_business')
+    compile project(':framework_batch')
+  }
+
+}
+project('tools'){
+  dependencies{
+    compile project(':careradius_business')
+    compile project(':framework_batch')
+  }
+  uploadArchives.enabled = false
+
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}
+
+project('integration'){
+  //For skipping sub-projects with no Unit Tests, overwrite task to do nothing
+  task runSonar(overwrite: true) {
+    doLast logSonarSkipped
+  }
+}

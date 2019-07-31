@@ -1,0 +1,197 @@
+1.	SVN - Tag trunk
+2.	mkdir careradius_suite -> SVN.add
+3.	Copy to careradius_suite from branches\CR3.1.G -> SVN.add
+	  - build.gradle
+	  - gradle.properties
+	  - gradlew
+	  -	gradlew.bat 
+	  - settings.gradle
+4.	Copy 
+	  from from careradius_suite from branches\CR3.1.G\servers 
+	  to trunk
+5.	SVN copy
+	  from careradius_suite from branches\CR3.1.G\common_tools
+	  to careradius_suite
+4.	mkdir careradius_suite/Framework -> SVN.add
+5.	SVN copy
+	  from careradius_suite from branches\CR3.1.G\Framework
+	  	- build.properties
+	  	- framework.gradle
+	  	- Rcp4-Build.javaCompiler.args
+	  	- Rcp4-Build.xml
+	  	- sonar-project.properties
+6.	SVN move
+	  from trunk\Framework
+	  	- META-INF
+	  to careradius_suite\Framework
+7.	mkdirs Framework src dirs SVN.add
+8.	SVN move
+	  from trunk\Framework\src
+	  to careradius_suite\Framework\src\main\java
+9.	SVN move
+	  from trunk\Framework_tests\src
+	  to careradius_suite\Framework\src\test\java
+10.	SVN move
+	  from trunk\Framework_tests\conf
+	  to careradius_suite\Framework\src\test\resources
+11.	Edit careradius_suite\settings.gradle -> comment out all but Framework and common_tools
+12.	Edit careradius_suite\build.gradle -> comment out all but Framework and common_tools
+13. SVN commit changes
+14.	gradle :framwork:test
+15. SVN - update ignore list -> commit
+16.	fix broken framework tests except for the TransactionTest which requires CEW to review
+17. SVN commit changes
+18. mkdir careradius_suite\common_model -> SVN.add
+19. SVN copy
+	  from branches\CR3.1.G\common_model
+	    - common_model.gradle
+	    - build.properties
+	    - common_model.gradle
+	    - Rcp4-Build.javaCompiler.args
+	    - Rcp4-Build.xml
+	    - sonar-project.properties
+20. SVN move
+	  from trunk\common\common_model\
+	  META-INF -> branches\CR3.1.G\common_model
+	  conf -> src\main\resources
+21. SVN commit
+22. Edit build.gradle and settings.gradle -> uncomment common_model projects
+23.	gradle :common_model:jar
+24.	update SVN ignores -> commit
+25. mkdir careradius_suite\careradius_business (including src main test java resources) -> SVN.add
+26. SVN copy
+	  from branches\CR3.1.G\careradius_business
+	    - careradius_business.gradle
+	    - build.properties
+	    - common_model.gradle
+	    - Rcp4-Build.javaCompiler.args
+	    - Rcp4-Build.xml
+	    - sonar-project.properties
+	    - .springBeans
+27. SVN move
+	  from trunk\careradius\careradius_business\
+	  META-INF -> branches\CR3.1.G\careradius_business
+	  conf -> src\main\resources
+	  src -> src\main\java
+28. SVN move
+	  from trunk\careradius\careradius_business_tests\
+	  conf -> src\test\resources
+	  src -> src\test\java
+29.	SVN move
+	  from trunk\careradius\careradius_webservices\WebRoot\WEB-INF
+	  wsdl -> careradius_business
+30. Edit build.gradle settings.gradle
+31. gradle Eclipse
+32. Update SVN Ignore List -> SVN.commit
+33. mkdir careradius_suite\careradius_webservices\src\main\webapp\WEB-INF -> SVN.add
+34. SVN move
+	  from trunk\careradius\careradius_webservices\WebRoot
+	  META-INF -> src\main\webapp
+35. mkdir careradius_suite\careradius_webservices\conf_web -> SVN.add
+36. mkdir careradius_suite\careradius_webservices\conf_dev -> SVN.add
+37. mkdir careradius_suite\careradius_webservices\conf_prod -> SVN.add
+38. SVN move
+	  from trunk\careradius\careradius_webservices\WebRoot\WEB-INF
+	  web.xml -> src\main\webapp\WEB-INF
+	  third_party_tomcat* -> conf_web
+39. SVN move
+	  from trunk\careradius\careradius_webservices\conf_(dev\prod)
+	  logback.xml -> conf(dev\prod)
+	  site.xml -> conf(dev\prod)
+40.	SVN copy
+	  from branches\CR3.1.G\careradius_webservices
+	    - careradius_webservices.gradle
+	    - README.txt
+41.	Edit build.gradle settings.gradle -> SVN.commit
+42. gradle Eclipse
+43. Update SVN Ignore List -> SVN.commit
+44.	Open Eclipse -> fix careradius_business test package names -> SVN.commit
+		src\test\com.landacorp.careradius.workflowaccess -> com.landacorp.careradius.workflowAccess
+		src\test\com.landacorp.careradius.usermanagement -> com.landacorp.careradius.userManagement
+45.	mkdir careradius_suite\careradius_webservices_j2ee\src\main\webapp\WEB-INF -> SVN.add
+46.	mkdir careradius_suite\careradius_webservices_j2ee\src\main\webapp\META-INF -> SVN.add
+47.	mkdir careradius_suite\careradius_webservices_j2ee\conf -> SVN.add
+48.	SVN move
+	  from trunk\careradius\careradius_webservices\WebRoot\WEB-INF
+	  web_j2ee.xml -> conf
+	  third_party_j2ee_web.xml -> conf
+	  application.xml -> src\main\WEB-INF
+49. SVN copy
+	  from branches\CR3.1.G\careradius_webservices_j2ee
+	    - careradius_webservices_j2ee.gradle
+50. Edit build.gradle settings.gradle -> SVN.commit
+51. gradle Eclipse, gradle :careradius_webservices_j2ee_war
+52. Update SVN Ignore List
+53.	mkdir careradius_ear -> SVN.add
+54.	SVN copy
+	  from branches\CR3.1.G\careradius_ear
+	    - careradius_ear.gradle
+55.	Update build.gradle settings.gradle
+56.	gradle :careradius_ear:ear
+57.	Update SVN Ignore List -> SVN.commit
+58.	mkdir careradius_suite\careaffiliate_business (including src main test java resources) -> SVN.add
+59.	SVN move
+	  from trunk\careaffiliate\careaffiliate_business
+	  conf -> careaffiliate_business\src\main\resources
+	  src\com -> carefaffiliate_business\src\main\java
+	  sonar-project.properties -> careaffiliate_business
+60. SVN move
+	  from trunk\careaffiliate\careaffiliate_business_tests
+	  conf -> careaffiliate_business\src\test\resources
+	  src\com -> careaffiliate_business\src\test\java
+61. SVN copy
+	  from branches\CR3.1.G\careaffiliate_business
+	    - careaffiliate_business.gradle
+62. Edit build.gradle settings.gradle -> SVN.commit
+63.	gradle Eclipse -> gradle :careaffiliate_business:generateWsdls
+64. Update SVN Ignore List -> SVN.commit
+65. mkdir careradius_suite\careaffiliate_webservices\src\main\webapp\WEB-INF -> SVN.add
+68. mkdir careradius_suite\careaffiliate_webservices\conf_dev -> SVN.add
+69. mkdir careradius_suite\careaffiliate_webservices\conf_prod -> SVN.add
+70.	SVN copy
+	  from branches\CR3.1.G\careaffiliate_webservices
+	    - careaffiliate_webservices.gradle
+	    - README.txt
+71. SVN move
+	  from trunk\careradius\careradius_webservices\WebRoot
+	  META-INF -> src\main\webapp
+
+72. SVN move
+	  from trunk\careradius\careradius_webservices\WebRoot\WEB-INF
+	  web.xml -> src\main\webapp\WEB-INF
+73. SVN move
+	  from trunk\careradius\careradius_webservices\conf_(dev\prod)
+	  logback.xml -> conf(dev\prod)
+	  site.xml -> conf(dev\prod)
+
+74.	Edit build.gradle settings.gradle -> SVN.commit
+75. gradle Eclipse, gradle :careaffiliate_webservices:war
+76. Update SVN Ignore List -> SVN.commit
+77. mkdir careradius_suite\careaffiliate_webservices_j2ee\src\main\webapp\WEB-INF -> SVN.add
+77. mkdir careradius_suite\careaffiliate_webservices_j2ee\conf -> SVN.add
+78. SVN move
+	  from trunk\careaffiliate\careaffiliate_webservices\WebRoot\WEB-INF
+	  web_j2ee.xml -> conf
+79. SVN copy
+	  from branches\CR3.1.G\careradius_suite\careaffiliate_webservices_j2ee\conf
+	  third_party_j2ee_web.xml -> conf
+	  site_config.xml -> conf
+	  logback.xml -> conf
+80.	SVN move
+	  from trunk\careaffiliate\careaffiliate_webservices\WebRoot\WEB-INF
+	  application.xml -> src\main\webapp\WEB-INF
+81. SVN copy
+	  from careradius_suite\careaffiliate_webservices\src\main\webapp
+	  META-INF -> src\main\webapp
+82.	SVN copy
+	  from branches\CR3.1.G\careaffiliate_webservices_j2ee
+	  careaffiliate_webservices_j2ee.gradle
+83.	Edit build.gradle settings.gradle -> SVN.commit
+84. gradle Eclipse, gradle :careaffiliate_webservices_j2ee:war
+85. Update SVN Ignore List -> SVN.commit
+86.	mkdir careradius_suite\careaffiliate_ear
+87. SVN copy
+	  from branches\CR3.1.G\careaffiliate_ear
+	  careaffiliate_ear.gradle -> careaffiliate_ear
+88. gradle Eclipse, gradle :careaffiliate_ear:ear
+89. Update SVN Ignore List -> SVN.commit
