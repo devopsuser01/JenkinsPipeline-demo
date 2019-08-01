@@ -1,0 +1,1 @@
+SELECT cols.column_name FROM all_constraints cons NATURAL JOIN all_cons_columns cols WHERE cons.constraint_type = 'P' AND table_name = 'TAU_TREATMENT_AUTHORIZATION' ;

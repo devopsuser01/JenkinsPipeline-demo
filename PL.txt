@@ -1,0 +1,12 @@
+Delhi#123
+624908 PL/SQL 
+select * from CTP_COMPONENT_TYPE ORDER by CTP_UID;
+
+after conversion it will run sysdatagen
+
+eha---high access
+ela---low acces
+sla--sattic low access
+dtx---proceses
+lob--large objects
+ctx--text indexes (for xmls, clobs etc)

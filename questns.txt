@@ -1,0 +1,42 @@
+IN page 44; In employee table, How can we treat name as primary key ? What is the concept of PK in HIve ?
+
+In P.45: What i understod is that each record stored in below format :
+John Doe^A100000.0^AMary Smith^BTodd Jones^AFederal Taxes^C.2^BState
+Taxes^C.05^BInsurance^C.1^A1 Michigan Ave.^BChicago^BIL^B60600
+
+Please give an oerview of page 44 to 46
+
+***************
+
+NOTE: Unfortunately, there is no command to show you which database is your current
+working database! Fortunately, it’s always safe to repeat the USE … command; there is
+no concept in Hive of nesting of databases.
+
+Page number 52
+
+***************
+
+Page 52: There is no way to delete or “unset” a DBPROPERTY.
+
+Q: As we know DB property must be stored in some xml file.What will hapen if we forcefully update the *.xml proprty file?
+
+
+Page 53 Q: How we can attach a comment to the table itself and also define one or more table properties ?
+
+NOTE: Q: Dropping the table will only delete the data but not its structure.How ?
+
+Page 54: Please show the table location.I Need to check the data in it ?
+
+Page 57 :
+
+Q: Pleae explain diff between Managed & external table with examples ?
+Q: As we know that we are creating external tables if there is some data created by other tools
+like Pig & we want to query on that data.Now can we query on the data by other tool like PIG which is created by HIve its self.?
+
+PAGE 59; Q: How the partioned table stored inside the databse.Expain with example? And also what is the benefit of STRICT mode in hive?
+
+PAGE 73: Q; What is SEQUENCEFILE storage ? OR do we have diff kind of storages?
+
+Page 76: EXPORTING DATA
+
+PAge 96 ?? LIKE and RLIKE

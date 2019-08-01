@@ -1,0 +1,2 @@
+-----DB compare UT execution--------
+tclsh tclConversionUnit.test -loadfile config1.tcl -outfile test.txt -verbose pset

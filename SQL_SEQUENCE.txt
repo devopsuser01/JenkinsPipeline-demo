@@ -1,0 +1,9 @@
+//select * From SRE_SCHEMA_REQUEST ;
+
+//CREATE SEQUENCE SRE_UID  MINVALUE 1 START WITH 1   INCREMENT BY 1   CACHE 20;
+
+//alter table SRE_SCHEMA_REQUEST add (SRE_UID number);
+
+//UPDATE SRE_SCHEMA_REQUEST  SET SRE_UID  = SRE_UID.nextval ;
+
+//insert into SRE_SCHEMA_REQUEST  values ('abc','def',SRE_UID.nextval) ;
